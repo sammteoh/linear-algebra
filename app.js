@@ -1,14 +1,14 @@
+// ----------- CANVAS ----------------------
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const wrapper = canvas.parentElement;
 
-const WIDTH = window.innerWidth * (5 / 9);
-const HEIGHT = WIDTH;
+const width = wrapper.clientWidth;
+const height = width;
 
-canvas.width = WIDTH;
-canvas.height = HEIGHT;
-
-const width = canvas.width;
-const height = canvas.height;
+canvas.width = width;
+canvas.height = height;
 
 const intervals = 10;
 
@@ -36,8 +36,8 @@ let A = Matrix.create([
 drawVector(A.data);
 
 let T = Matrix.create([
-    [-1, 4],
-    [1, 5]
+    [1, 0],
+    [0, 1]
 ])
 
 drawVector(T.multiply(A));
@@ -78,6 +78,38 @@ function drawLine(startX, startY, endX, endY, lineWidth=1, strokeStyle='rgba(0, 
     ctx.lineTo(endX, endY);
     ctx.stroke();
 }
+
+// ------------- FORMULAS --------------
+
+const container = document.getElementById('formula-container');
+
+function writeMatrix(m) {
+    returnString = String.raw`\begin{bmatrix} `;
+
+    for (let i = 0; i < m.rows; i++) {
+        for (let j = 0; j < m.cols; j++) {
+            if (j != 0) {
+                returnString += ' & ';
+            }
+            console.log(m.get(i + 1, j + 1));
+            returnString += m.get(i + 1, j + 1);
+        }
+        if (i != m.rows - 1) {
+            returnString += String.raw` \\ `;
+        }
+    }
+    returnString += String.raw` \end{bmatrix}`;
+    return returnString;
+}
+
+katex.render(
+  String.raw`${writeMatrix(T)}`,
+  container,
+  {
+    displayMode: true,
+    throwOnError: false
+  }
+);
 
 
 
