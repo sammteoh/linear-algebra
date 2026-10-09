@@ -1,8 +1,8 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-const HEIGHT = window.innerHeight;
-const WIDTH = window.innerWidth;
+const WIDTH = window.innerWidth * (5 / 9);
+const HEIGHT = WIDTH;
 
 canvas.width = WIDTH;
 canvas.height = HEIGHT;
@@ -28,11 +28,23 @@ drawLine(-width / 2, 0, width / 2, 0);
 drawYGrid(intervals);
 drawXGrid(intervals);
 
-drawVector(2, 4);
+let A = Matrix.create([
+    [1],
+    [1]
+])
 
-function drawVector(endX, endY, startX=0, startY=0) {
-    drawLine(startX, startY, endX * intervalX, endY * intervalY);
-}
+drawVector(A.data);
+
+let T = Matrix.create([
+    [-1, 4],
+    [1, 5]
+])
+
+drawVector(T.multiply(A));
+
+function drawVector(vector, startX=0, startY=0) {
+    drawLine(startX, startY, vector[0][0] * intervalX, vector[1][0] * intervalY);
+};
 
 // ---------- SET UP ----------
 

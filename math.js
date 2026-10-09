@@ -47,20 +47,6 @@ class Matrix {
                 sum = 0;
             }
         };
-        return product;
+        return product.data;
     }
 }
-
-let A = Matrix.create([
-    [1, 2],
-    [3, 4]
-])
-
-let B = Matrix.create([
-    [2, 3],
-    [4, 5]
-])
-
-let C = B.multiply(A);
-
-console.log(C.data);
