@@ -1,22 +1,69 @@
 * {
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
 }
 
 body {
-    display: flex;
+    font-family: system-ui, sans-serif;
 }
 
-#canvas-container {
-    width: 50vw;
+#app {
+    display: flex;
     height: 100vh;
 }
 
-#formula-container {
-    width: 33.33vw;
+#canvas-container {
+    flex: 0 0 min(50vw, 100vh);
+    border-right: 2px solid black;
 }
 
 #canvas {
     display: block;
-    border: 2px solid black;
 }
+
+#sidebar {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#inputs {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    margin: 12px 0;
+}
+
+.matrix-inputs {
+    display: grid;
+    grid-template-columns: repeat(3, 60px);
+    gap: 6px;
+}
+
+.vector-inputs {
+    display: grid;
+    grid-template-columns: 60px;
+    gap: 6px;
+}
+
+.entry {
+    width: 100%;
+    padding: 4px;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+#formula-container {
+    overflow-x: auto;
+}
+
+#controls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+

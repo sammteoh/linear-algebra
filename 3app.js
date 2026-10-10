@@ -41,24 +41,6 @@ scene.add(floor);
 
 // ---------- VECTORS ----------
 
-function drawVector(v, color=0x000000) {
-    // v is a 3x1 matrix vector
-    const dir = new THREE.Vector3(v.get(1, 1), v.get(2, 1), v.get(3, 1));
-    const length = dir.length();
-    if (length === 0) return;
-
-    const arrow = new THREE.ArrowHelper(
-        dir.normalize(),
-        new THREE.Vector3(0, 0, 0),
-        length,
-        color,
-        0.4,
-        0.2
-    );
-    scene.add(arrow);
-    return arrow;
-}
-
 function makeLattice(n=3, color=0xff0000) {
     const points = [];
     for (let a = -n; a <= n; a++) {
@@ -132,28 +114,60 @@ function writeMatrix(m) {
     return returnString;
 }
 
-let lattice;
-let transformedArrow;
+function makeArrow(color) {
+    const arrow = new THREE.ArrowHelper(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 0, 0),
+        1,
+        color,
+        0.4,
+        0.2
+    );
+    scene.add(arrow);
+    return arrow;
+}
 
-function transformVector(T, V) {
-    lattice = makeLattice();
-    lattice.matrixAutoUpdate = false;
-    scene.add(lattice);
+const lattice = makeLattice();
+lattice.matrixAutoUpdate = false;
+scene.add(lattice);
 
-    drawVector(V);
-    transformedArrow = drawVector(T.multiply(V), 0xff0000);
+const originalArrow = makeArrow(0x000000);
+const transformedArrow = makeArrow(0xff0000);
 
+// --------- INPUTS ------------
+
+function readInputs() {
+    const num = (id) => parseFloat(document.getElementById(id).value) || 0;
+
+    const newT = [];
+    for (let i = 1; i <= 3; i++) {
+        newT.push([num(`t${i}1`), num(`t${i}2`), num(`t${i}3`)]);
+    }
+    T = Matrix.create(newT);
+    V = Matrix.create([[num('v1')], [num('v2')], [num('v3')]]);
+}
+
+function renderFormula() {
     katex.render(
         String.raw`${writeMatrix(T)} ${writeMatrix(V)} = \textcolor{red}{${writeMatrix(T.multiply(V))}}`,
         container,
-        {
-            displayMode: true,
-            throwOnError: false
-        }
+        { displayMode: true, throwOnError: false }
     );
-};
+}
 
-transformVector(T, V);
+function applyInputs() {
+    readInputs();
+    updateVector(originalArrow, V);
+    renderFormula();
+    startAnimation();
+}
+
+document.querySelectorAll('.entry').forEach((el) => {
+    el.addEventListener('input', applyInputs);
+});
+
+updateVector(originalArrow, V);
+renderFormula();
 
 // -------- ANIMATION -------------
 const DURATION = 3000;

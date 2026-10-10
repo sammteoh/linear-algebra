@@ -9,17 +9,44 @@
     </head>
 
     <body>
-        <div id="canvas-container">
-            <canvas id='canvas'></canvas>
+        <div id="app">
+            <div id="canvas-container">
+                <canvas id='canvas'></canvas>
+            </div>
+
+            <div id="sidebar">
+                <div id="inputs">
+                    <div class="matrix-inputs">
+                        <input type="number" step="any" class="entry" id="t11" value="2">
+                        <input type="number" step="any" class="entry" id="t12" value="0">
+                        <input type="number" step="any" class="entry" id="t13" value="1">
+                        <input type="number" step="any" class="entry" id="t21" value="0">
+                        <input type="number" step="any" class="entry" id="t22" value="1">
+                        <input type="number" step="any" class="entry" id="t23" value="-1">
+                        <input type="number" step="any" class="entry" id="t31" value="-1">
+                        <input type="number" step="any" class="entry" id="t32" value="0">
+                        <input type="number" step="any" class="entry" id="t33" value="2">
+                    </div>
+
+                    <div class="vector-inputs">
+                        <input type="number" step="any" class="entry" id="v1" value="1">
+                        <input type="number" step="any" class="entry" id="v2" value="1">
+                        <input type="number" step="any" class="entry" id="v3" value="1">
+                    </div>
+                </div>
+
+                <div id="formula-container"></div>
+
+                <div id="controls">
+                    <button id="replay">Replay</button>
+                    <label>
+                        <input type="checkbox" id="toggle-lattice" checked>
+                        Show transforming grid
+                    </label>
+                </div>
+            </div>
+
         </div>
-
-        <div id="formula-container"></div>
-
-        <button id="replay">Replay</button>
-        <label>
-            <input type="checkbox" id="toggle-lattice" checked>
-            Show transforming grid
-        </label>
 
         <script type="importmap">
         {
@@ -29,7 +56,6 @@
             }
         }
         </script>
-
         <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
         <script type="module" src="3app.js"></script>
         
