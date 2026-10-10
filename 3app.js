@@ -2,6 +2,24 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Matrix } from './math.js';
 
+let e1 = Matrix.create([
+    [1],
+    [0],
+    [0]
+]);
+
+let e2 = Matrix.create([
+    [0],
+    [1],
+    [0]
+]);
+
+let e3 = Matrix.create([
+    [0],
+    [0],
+    [1]
+]);
+
 let V = Matrix.create([
     [1],
     [1],
@@ -9,9 +27,9 @@ let V = Matrix.create([
 ]);
 
 let T = Matrix.create([
-    [2, 0, 1],
-    [0, 1, -1],
-    [-1, 0, 2]
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1]
 ]);
 
 // ----------- SCENE -----------
@@ -40,6 +58,19 @@ floor.rotation.x = Math.PI / 2;
 scene.add(floor);
 
 // ---------- VECTORS ----------
+
+function makeArrow(color) {
+    const arrow = new THREE.ArrowHelper(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 0, 0),
+        1,
+        color,
+        0.4,
+        0.2
+    );
+    scene.add(arrow);
+    return arrow;
+}
 
 function makeLattice(n=3, color=0xff0000) {
     const points = [];
@@ -83,13 +114,21 @@ function interpolate(M, t) {
     return result;
 }
 
-function updateVector(arrow, v) {
+function updateVector(arrow, v, enabled=true) {
     const dir = new THREE.Vector3(v.get(1, 1), v.get(2, 1), v.get(3, 1));
     const length = dir.length();
-    arrow.visible = length > 0;
+    arrow.visible = enabled  && length > 0;
     if (length === 0) return;
     arrow.setDirection(dir.normalize());
     arrow.setLength(length, 0.4, 0.2);
+}
+
+let showBasis = true;
+
+function updateBasis(M) {
+    updateVector(iArrow, M.multiply(e1), showBasis);
+    updateVector(jArrow, M.multiply(e2), showBasis);
+    updateVector(kArrow, M.multiply(e3), showBasis);
 }
 
 // ------------- FORMULAS --------------
@@ -114,18 +153,6 @@ function writeMatrix(m) {
     return returnString;
 }
 
-function makeArrow(color) {
-    const arrow = new THREE.ArrowHelper(
-        new THREE.Vector3(0, 0, 1),
-        new THREE.Vector3(0, 0, 0),
-        1,
-        color,
-        0.4,
-        0.2
-    );
-    scene.add(arrow);
-    return arrow;
-}
 
 const lattice = makeLattice();
 lattice.matrixAutoUpdate = false;
@@ -133,6 +160,10 @@ scene.add(lattice);
 
 const originalArrow = makeArrow(0x000000);
 const transformedArrow = makeArrow(0xff0000);
+
+const iArrow = makeArrow(0x000000);
+const jArrow = makeArrow(0x000000);
+const kArrow = makeArrow(0x000000);
 
 // --------- INPUTS ------------
 
@@ -166,7 +197,9 @@ document.querySelectorAll('.entry').forEach((el) => {
     el.addEventListener('input', applyInputs);
 });
 
+readInputs();
 updateVector(originalArrow, V);
+updateBasis(T);
 renderFormula();
 
 // -------- ANIMATION -------------
@@ -187,7 +220,8 @@ function animate() {
         const M = interpolate(T, t);
         lattice.matrix.copy(toMatrix4(M));
         lattice.matrixWorldNeedsUpdate = true;
-        updateVector(transformedArrow, M.multiply(V));
+        updateVector(transformedArrow, M.multiply(V)); 
+        updateBasis(M);
     }
 
     controls.update();
@@ -197,7 +231,10 @@ function animate() {
 document.getElementById('replay').addEventListener('click', startAnimation);
 document.getElementById('toggle-lattice').addEventListener('change', (e) => {
     lattice.visible = e.target.checked;
-})
+});
+document.getElementById('toggle-basis').addEventListener('change', (e) => {
+    showBasis = e.target.checked;
+});
 
 startAnimation();
 animate();
