@@ -1,4 +1,4 @@
-class Matrix {
+export class Matrix {
     constructor(rows, cols) {
         this.rows = rows;
         this.cols = cols;
@@ -38,13 +38,9 @@ class Matrix {
                 let sum = 0;
                 // Row k of matrix A
                 for (let k = 1; k < this.cols + 1; k++) {
-                    let m_value = m.get(k, j);
-                    let this_value = this.get(i, k);
-
                     sum += this.get(i, k) * m.get(k, j);
                 }
                 product.set(i, j, sum);
-                sum = 0;
             }
         };
         return product;
