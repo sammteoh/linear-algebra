@@ -29,10 +29,25 @@ drawYGrid(intervals);
 drawXGrid(intervals);
 
 function drawVector(vector, startX=0, startY=0, color='rgba(0, 0, 0, 1)') {
-    drawLine(startX, startY, vector[0][0] * intervalX, vector[1][0] * intervalY, 1, color);
+    const x = vector[0][0] * intervalX;
+    const y = vector[1][0] * intervalY;
+    drawLine(startX, startY, x, y, 1, color);
+
 };
 
 // ---------- SET UP ----------
+
+function clear() {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+}
+
+function render() {
+    clear();
+    drawBackground();
+}
 
 // Draw grid function
 function drawYGrid(n) {
@@ -55,6 +70,13 @@ function drawXGrid(n) {
     }
 }
 
+function drawBackground() {
+    drawLine(0, -height / 2, 0, height / 2);
+    drawLine(-width / 2, 0, width / 2, 0);
+    drawYGrid(intervals);
+    drawXGrid(intervals);
+}
+
 // Draw line function
 function drawLine(startX, startY, endX, endY, lineWidth=1, strokeStyle='rgba(0, 0, 0, 1)') {
     ctx.beginPath();
@@ -70,14 +92,13 @@ function drawLine(startX, startY, endX, endY, lineWidth=1, strokeStyle='rgba(0, 
 const container = document.getElementById('formula-container');
 
 function writeMatrix(m) {
-    returnString = String.raw`\begin{bmatrix} `;
+    let returnString = String.raw`\begin{bmatrix} `;
 
     for (let i = 0; i < m.rows; i++) {
         for (let j = 0; j < m.cols; j++) {
             if (j != 0) {
                 returnString += ' & ';
             }
-            console.log(m.get(i + 1, j + 1));
             returnString += m.get(i + 1, j + 1);
         }
         if (i != m.rows - 1) {

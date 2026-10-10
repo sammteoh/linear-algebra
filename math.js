@@ -10,7 +10,7 @@ class Matrix {
     // Helper to initialize Matrix directly
     static create(arr) {
         const m = new Matrix(arr.length, arr[0].length)
-        m.data = arr;
+        m.data = arr.map(row => [...row]);
         return m;
     }
 
