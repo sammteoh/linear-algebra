@@ -47,6 +47,6 @@ class Matrix {
                 sum = 0;
             }
         };
-        return product.data;
+        return product;
     }
 }

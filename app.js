@@ -28,22 +28,8 @@ drawLine(-width / 2, 0, width / 2, 0);
 drawYGrid(intervals);
 drawXGrid(intervals);
 
-let A = Matrix.create([
-    [1],
-    [1]
-])
-
-drawVector(A.data);
-
-let T = Matrix.create([
-    [1, 0],
-    [0, 1]
-])
-
-drawVector(T.multiply(A));
-
-function drawVector(vector, startX=0, startY=0) {
-    drawLine(startX, startY, vector[0][0] * intervalX, vector[1][0] * intervalY);
+function drawVector(vector, startX=0, startY=0, color='rgba(0, 0, 0, 1)') {
+    drawLine(startX, startY, vector[0][0] * intervalX, vector[1][0] * intervalY, 1, color);
 };
 
 // ---------- SET UP ----------
@@ -102,14 +88,42 @@ function writeMatrix(m) {
     return returnString;
 }
 
-katex.render(
-  String.raw`${writeMatrix(T)}`,
+function transformVector(T, V) {
+    drawVector(V.data);
+    drawVector(T.multiply(V).data, 0, 0, 'rgba(255, 0, 0, 1)');
+
+    katex.render(
+        String.raw`${writeMatrix(T)} ${writeMatrix(V)} = \textcolor{red}{${writeMatrix(T.multiply(V))}}`,
+        container,
+        {
+            displayMode: true,
+            throwOnError: false
+        }
+    );
+};
+
+let V = Matrix.create([
+    [1],
+    [1]
+]);
+
+let T = Matrix.create([
+    [2, 3],
+    [-1, 5]
+]);
+
+transformVector(T, V);
+
+
+
+/* katex.render(
+  String.raw``,
   container,
   {
     displayMode: true,
     throwOnError: false
   }
-);
+); */
 
 
 
