@@ -46,3 +46,24 @@ export class Matrix {
         return product;
     }
 }
+
+export function rotation(axis, theta) {
+    const c = Math.cos(theta);
+    const s = Math.sin(theta);
+
+    switch (axis) {
+        case 'x': return Matrix.create([[1, 0, 0], [0, c, -s], [0, s, c]]);
+        case 'y': return Matrix.create([[c, 0, s], [0, 1, 0], [-s, 0, c]]);
+        case 'z': return Matrix.create([[c, -s, 0], [s, c, 0], [0, 0, 1]]);
+        default:  throw new Error(`Unknown axis: ${axis}`);
+    }
+}
+
+export function scale(axis, c) {
+    switch (axis) {
+        case 'x': return Matrix.create([[c, 0, 0], [0, 1, 0], [0, 0, 1]]);
+        case 'y': return Matrix.create([[1, 0, 0], [0, c, 0], [0, 0, 1]]);
+        case 'z': return Matrix.create([[1, 0, 0], [0, 1, 0], [0, 0, c]]);
+        default:  throw new Error(`Unknown axis: ${axis}`);
+    }
+}

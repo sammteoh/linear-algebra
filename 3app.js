@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Matrix } from './math.js';
+import { Matrix, rotation, scale } from './math.js';
 
 let e1 = Matrix.create([
     [1],
@@ -103,12 +103,11 @@ function toMatrix4(M) {
     )
 }
 
-function interpolate(M, t) {
+function blend(A, B, t) {
     const result = new Matrix(3, 3);
     for (let i = 1; i <= 3; i++) {
         for (let j = 1; j <= 3; j++) {
-            const identity = (i === j) ? 1 : 0;
-            result.set(i, j, (1 - t) * identity + t * M.get(i, j));
+            result.set(i, j, (1 - t) * A.get(i, j) + t * B.get(i, j));
         }
     }
     return result;
@@ -143,7 +142,7 @@ function writeMatrix(m) {
             if (j != 0) {
                 returnString += ' & ';
             }
-            returnString += m.get(i + 1, j + 1);
+            returnString += Number(m.get(i + 1, j + 1).toFixed(3));
         }
         if (i != m.rows - 1) {
             returnString += String.raw` \\ `;
@@ -178,6 +177,68 @@ function readInputs() {
     V = Matrix.create([[num('v1')], [num('v2')], [num('v3')]]);
 }
 
+function setMatrixInputs(M) {
+    for (let i = 1; i <= 3; i++) {
+        for (let j = 1; j <= 3; j++) {
+            document.getElementById(`t${i}${j}`).value = Number(M.get(i, j).toFixed(4));
+        }
+    }
+}
+
+const IDENTITY_STATE = { rx: 0, ry: 0, rz: 0, sx: 1, sy: 1, sz: 1 };
+const IDENTITY_M = Matrix.create([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
+
+let sliderMode = true;
+let animMode = 'state';
+let currentState = { ...IDENTITY_STATE };
+let currentIsState = true;
+let currentM = IDENTITY_M;
+let fromState = { ...IDENTITY_STATE };
+let toState = { ...IDENTITY_STATE };
+let fromM = IDENTITY_M;
+
+function readSliderState() {
+    const value = (id) => parseFloat(document.getElementById(id).value);
+    const degrees = Math.PI / 180;
+    return {
+        rx: value('x-rotation') * degrees, ry: value('y-rotation') * degrees, rz: value('z-rotation') * degrees,
+        sx: value('x-scale'), sy: value('y-scale'), sz: value('z-scale')
+    };
+}
+
+function lerpState(a, b, t) {
+    const out = {};
+    for (const key in a) out[key] = a[key] + t * (b[key] - a[key]);
+    return out;
+}
+
+function buildFromState(s) {
+    const R = rotation('z', s.rz)
+        .multiply(rotation('y', s.ry))
+        .multiply(rotation('x', s.rx));
+    const S = scale('z', s.sz)
+        .multiply(scale('y', s.sy))
+        .multiply(scale('x', s.sx));
+    return S.multiply(R);
+}
+
+function applySliders() {
+    const axes = ['x', 'y', 'z'];
+    const val = (id) => parseFloat(document.getElementById(id).value);
+
+    axes.forEach((a) => {
+        document.getElementById(`${a}-rotation-label`).textContent = `${val(`${a}-rotation`)}°`;
+        document.getElementById(`${a}-scale-label`).textContent = val(`${a}-scale`);
+    });
+
+    sliderMode = true;
+    toState = readSliderState();
+    setMatrixInputs(buildFromState(toState));
+    applyInputs();
+    beginFromCurrent(currentIsState ? 'state' : 'blend');
+}
+
+
 function renderFormula() {
     katex.render(
         String.raw`${writeMatrix(T)} ${writeMatrix(V)} = \textcolor{red}{${writeMatrix(T.multiply(V))}}`,
@@ -190,11 +251,21 @@ function applyInputs() {
     readInputs();
     updateVector(originalArrow, V);
     renderFormula();
-    startAnimation();
+}
+
+function beginFromCurrent(mode) {
+    animMode = mode;
+    fromState = { ...currentState };
+    fromM = currentM;
+    startTime = performance.now();
 }
 
 document.querySelectorAll('.entry').forEach((el) => {
-    el.addEventListener('input', applyInputs);
+    el.addEventListener('input', () => {
+        sliderMode = false;
+        applyInputs();
+        beginFromCurrent('blend');
+    });
 });
 
 readInputs();
@@ -207,6 +278,9 @@ const DURATION = 3000;
 let startTime = null;
 
 function startAnimation() {
+    animMode = sliderMode ? 'state' : blend;
+    fromState = { ...IDENTITY_STATE };
+    fromM = IDENTITY_M;
     startTime = performance.now();
 }
 
@@ -217,10 +291,24 @@ function animate() {
         const raw = Math.min((performance.now() - startTime) / DURATION, 1);
         const t = raw * raw * (3 - 2 * raw);
 
-        const M = interpolate(T, t);
+        let M;
+        if (animMode === 'state') {
+            currentState = lerpState(fromState, toState, t);
+            M = buildFromState(currentState);
+            currentIsState = true;
+        } else {
+            M = blend(fromM, T, t);
+            currentIsState = false;
+            if (raw === 1 && sliderMode) {
+                currentState = { ...toState };
+                currentIsState = true;
+            }
+        }
+        currentM = M;
+
         lattice.matrix.copy(toMatrix4(M));
         lattice.matrixWorldNeedsUpdate = true;
-        updateVector(transformedArrow, M.multiply(V)); 
+        updateVector(transformedArrow, M.multiply(V));
         updateBasis(M);
     }
 
@@ -235,7 +323,12 @@ document.getElementById('toggle-lattice').addEventListener('change', (e) => {
 document.getElementById('toggle-basis').addEventListener('change', (e) => {
     showBasis = e.target.checked;
 });
+['x', 'y', 'z'].forEach((axis) => {
+    document.getElementById(`${axis}-rotation`).addEventListener('input', applySliders);
+    document.getElementById(`${axis}-scale`).addEventListener('input', applySliders);
+});
 
+toState = readSliderState();
 startAnimation();
 animate();
 
