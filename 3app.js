@@ -116,7 +116,7 @@ function formatCoords(v) {
 }
 
 // Repositions the arrow to v
-function updateVector(arrow, v, enabled=true) {
+function updateVector(arrow, v, enabled=false) {
     const dir = new THREE.Vector3(v.get(1, 1), v.get(2, 1), v.get(3, 1));
     const length = dir.length();
     arrow.visible = enabled  && length > 0;
@@ -186,7 +186,7 @@ function blend(A, B, t) {
     return result;
 }
 
-let showBasis = true;
+let showBasis = false;
 
 function updateBasis(M) {
     updateVector(iArrow, M.multiply(e1), showBasis);
@@ -319,14 +319,62 @@ const crossArrow = makeArrow(0x0099aa);
 attachLabel(crossArrow, 'v×w', '#0099aa', true);
 
 const crossReadout = document.getElementById('cross-readout');
+const planeMesh = makeShape(0x0099aa);
+planeMesh.material.opacity = 0.10;
+
+let showCross = false;
+
+function setPlane(mesh, n, v, enabled=false) {
+    if (!enabled || n.length() < 1e-9 || v.length() < 1e-9) {
+        mesh.visible = false;
+        return;
+    }
+    mesh.visible = true;
+
+    const half = 6;
+    const a = v.clone().normalize().multiplyScalar(half);
+    const b = n.clone().normalize().cross(v.clone().normalize()).multiplyScalar(half);
+
+    const p1 = a.clone().negate().sub(b);   // -a - b
+    const p2 = a.clone().sub(b);            //  a - b
+    const p3 = a.clone().add(b);            //  a + b
+    const p4 = b.clone().sub(a);            // -a + b
+
+    const pos = mesh.geometry.attributes.position;
+    [p1, p2, p3, p1, p3, p4].forEach((p, i) => pos.setXYZ(i, p.x, p.y, p.z));
+    pos.needsUpdate = true;
+}
 
 function updateCross() {
     const n = toVec3(V).cross(toVec3(W));
+    setPlane(planeMesh, n, toVec3(V));
 
-    updateVector(crossArrow, Matrix.create([[n.x], [n.y], [n.z]]));
+    updateVector(crossArrow, Matrix.create([[n.x], [n.y], [n.z]]), showCross);
 
     const f = (x) => Number(x.toFixed(2));
     crossReadout.innerHTML = `|v × w| = ${f(n.length())}`;
+}
+
+const tCrossArrow = makeArrow(0xdd5500);
+attachLabel(tCrossArrow, 'Tv×Tw', '#dd5500', true);
+
+const tPlaneMesh = makeShape(0xff0000);
+tPlaneMesh.material.opacity = 0.1;
+
+function updateTransformedCross(M) {
+    const a = toVec3(M.multiply(V));
+    const b = toVec3(M.multiply(W));
+    const n = a.clone().cross(b);
+
+    updateVector(tCrossArrow, Matrix.create([[n.x], [n.y], [n.z]]), showCross);
+    setPlane(tPlaneMesh, n, a, showCross);
+}
+
+function setCrossVisible(show) {
+    showCross = show;
+    crossReadout.style.display = show ? '' : 'none';
+    updateCross();
+    updateTransformedCross(currentM);
 }
 
 // ----------------------- 3X3 DETERMINANT --------------------
@@ -560,6 +608,7 @@ function applyInputs() {
     updateBox();
     updateVolume();
     updateTransformedShape(currentM);
+    updateTransformedCross(currentM);
     updateTransformedBox(currentM);
     updateVolumeReadout(currentM);
     renderFormula();
@@ -632,6 +681,7 @@ function animate() {
         updateVector(transformedUArrow, M.multiply(U));
         updateBasis(M);
         updateTransformedShape(M);
+        updateTransformedCross(M);
         updateTransformedBox(M);
         updateVolumeReadout(M);
     }
@@ -642,9 +692,13 @@ function animate() {
 }
 
 document.getElementById('replay').addEventListener('click', startAnimation);
-document.getElementById('toggle-lattice').addEventListener('change', (e) => {
+
+const latticeToggle = document.getElementById('toggle-lattice');
+latticeToggle.addEventListener('change', (e) => {
     lattice.visible = e.target.checked;
 });
+lattice.visible = latticeToggle.checked;
+
 document.getElementById('toggle-basis').addEventListener('change', (e) => {
     showBasis = e.target.checked;
 });
@@ -662,6 +716,10 @@ setDetVisible(detToggle.checked);
 const volToggle = document.getElementById('toggle-det-vol');
 volToggle.addEventListener('change', (e) => setVolVisible(e.target.checked));
 setVolVisible(volToggle.checked); 
+
+const crossToggle = document.getElementById('toggle-cross');
+crossToggle.addEventListener('change', (e) => setCrossVisible(e.target.checked));
+setCrossVisible(crossToggle.checked); 
 
 toState = readSliderState();
 startAnimation();
