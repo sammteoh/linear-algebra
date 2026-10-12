@@ -27,6 +27,18 @@ let V = Matrix.create([
     [1]
 ]);
 
+let W = Matrix.create([
+    [0],
+    [0],
+    [0]
+]);
+
+let U = Matrix.create([
+    [0],
+    [0],
+    [0]
+])
+
 let T = Matrix.create([
     [1, 0, 0],
     [0, 1, 0],
@@ -206,15 +218,23 @@ const lattice = makeLattice();
 lattice.matrixAutoUpdate = false;
 scene.add(lattice);
 
-const originalArrow = makeArrow(0x000000);
-const transformedArrow = makeArrow(0xff0000);
+const originalVArrow = makeArrow(0x000000);
+const originalWArrow = makeArrow(0x000000);
+const originalUArrow = makeArrow(0x000000);
+const transformedVArrow = makeArrow(0xff0000);
+const transformedWArrow = makeArrow(0xff0000);
+const transformedUArrow = makeArrow(0xff0000);
 
 const iArrow = makeArrow(0xff8800);
 const jArrow = makeArrow(0x00aa00);
 const kArrow = makeArrow(0x0066ff);
 
-attachLabel(originalArrow, 'v', '#000000', true);
-attachLabel(transformedArrow, 'Tv', '#ff0000', true);
+attachLabel(originalVArrow, 'v', '#000000', true);
+attachLabel(transformedVArrow, 'Tv', '#ff0000', true);
+attachLabel(originalWArrow, 'w', '#000000', true);
+attachLabel(transformedWArrow, 'Tw', '#ff0000', true);
+attachLabel(originalUArrow, 'u', '#000000', true);
+attachLabel(transformedUArrow, 'Tu', '#ff0000', true);
 attachLabel(iArrow, 'î', '#ff8800');
 attachLabel(jArrow, 'ĵ', '#00aa00');
 attachLabel(kArrow, 'k̂', '#0066ff');
@@ -240,6 +260,8 @@ function readInputs() {
     }
     T = Matrix.create(newT);
     V = Matrix.create([[num('v1')], [num('v2')], [num('v3')]]);
+    W = Matrix.create([[num('w1')], [num('w2')], [num('w3')]]);
+    U = Matrix.create([[num('u1')], [num('u2')], [num('u3')]]);
 }
 
 // Writes matrix into the 9 matrix boxes
@@ -317,7 +339,11 @@ function applySliders() {
 
 function renderFormula() {
     katex.render(
-        String.raw`${writeMatrix(T)} ${writeMatrix(V)} = \textcolor{red}{${writeMatrix(T.multiply(V))}}`,
+        String.raw`${writeMatrix(T)} ${writeMatrix(V)} = \textcolor{red}{${writeMatrix(T.multiply(V))}}
+        \\
+        ${writeMatrix(T)} ${writeMatrix(W)} = \textcolor{red}{${writeMatrix(T.multiply(W))}}
+        \\
+        ${writeMatrix(T)} ${writeMatrix(U)} = \textcolor{red}{${writeMatrix(T.multiply(U))}}`,
         container,
         { displayMode: true, throwOnError: false }
     );
@@ -325,7 +351,9 @@ function renderFormula() {
 
 function applyInputs() {
     readInputs();
-    updateVector(originalArrow, V);
+    updateVector(originalVArrow, V);
+    updateVector(originalWArrow, W);
+    updateVector(originalUArrow, U);
     renderFormula();
 }
 
@@ -346,7 +374,9 @@ document.querySelectorAll('.entry').forEach((el) => {
 });
 
 readInputs();
-updateVector(originalArrow, V);
+updateVector(originalVArrow, V);
+updateVector(originalWArrow, W);
+updateVector(originalUArrow, U);
 updateBasis(T);
 renderFormula();
 
@@ -385,7 +415,9 @@ function animate() {
 
         lattice.matrix.copy(toMatrix4(M));
         lattice.matrixWorldNeedsUpdate = true;
-        updateVector(transformedArrow, M.multiply(V));
+        updateVector(transformedVArrow, M.multiply(V));
+        updateVector(transformedWArrow, M.multiply(W));
+        updateVector(transformedUArrow, M.multiply(U));
         updateBasis(M);
     }
 
@@ -401,6 +433,7 @@ document.getElementById('toggle-lattice').addEventListener('change', (e) => {
 document.getElementById('toggle-basis').addEventListener('change', (e) => {
     showBasis = e.target.checked;
 });
+
 ['x', 'y', 'z'].forEach((axis) => {
     document.getElementById(`${axis}-rotation`).addEventListener('input', applySliders);
     document.getElementById(`${axis}-scale`).addEventListener('input', applySliders);
