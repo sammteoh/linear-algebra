@@ -137,7 +137,11 @@ function updateVector(arrow, v, enabled=true) {
 }
 
 // ---------- VECTORS ----------
-
+function setDetVisible(show) {
+    shape.visible = show;
+    transformedShape.visible = show;
+    areaReadout.style.display = show ? '' : 'none';
+}
 
 function makeLattice(n=3, color=0xff0000) {
     const points = [];
@@ -248,6 +252,67 @@ axisLabels[0].position.set(10.7, 0, 0);
 axisLabels[1].position.set(0, 10.7, 0);
 axisLabels[2].position.set(0, 0, 10.7);
 
+// ---------------- 2X2 DETERMINANT ------------------
+
+function toVec3(m) {
+    return new THREE.Vector3(m.get(1, 1), m.get(2, 1), m.get(3, 1));
+}
+
+function makeShape(color) {
+    const mesh = new THREE.Mesh(
+        new THREE.BufferGeometry(),
+        new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: 0.3,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        })
+    );
+    mesh.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(18), 3));
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    return mesh;
+}
+
+function setShape(mesh, a, b) {
+    const o = new THREE.Vector3(0, 0, 0);
+    const ab = a.clone().add(b);
+    const pos = mesh.geometry.attributes.position;
+    [o, a, ab, o, ab, b].forEach((p, i) => pos.setXYZ(i, p.x, p.y, p.z));
+    pos.needsUpdate = true;
+}
+
+const shape = makeShape(0x888888);
+const transformedShape = makeShape(0xff0000);
+
+const areaReadout = document.getElementById('area-readout');
+let originalDet = 0;
+let originalArea = 0;
+
+function updateShape() {
+    const a = toVec3(V);
+    const b = toVec3(W);
+    setShape(shape, a, b);
+
+    originalDet = a.x * b.y - a.y * b.x;
+    originalArea = a.clone().cross(b).length();
+}
+
+function updateTransformedShape(M) {
+    const a = toVec3(M.multiply(V));
+    const b = toVec3(M.multiply(W));
+    setShape(transformedShape, a, b);
+
+    const area = a.clone().cross(b).length();
+    const f = (x) => Number(x.toFixed(2));
+    areaReadout.innerHTML =
+        `det[v w] = ${f(originalDet)}<br>` +
+        `area of v, w = ${f(originalArea)}<br>` +
+        `area of Tv, Tw = ${f(area)}` +
+        (originalArea > 1e-9 ? ` (×${f(area / originalArea)})` : '');
+}
+
 // --------- INPUTS ------------
 
 // Reads the 9 matrix boxes, converts to T and V
@@ -354,6 +419,8 @@ function applyInputs() {
     updateVector(originalVArrow, V);
     updateVector(originalWArrow, W);
     updateVector(originalUArrow, U);
+    updateShape();
+    updateTransformedShape(currentM);
     renderFormula();
 }
 
@@ -377,6 +444,7 @@ readInputs();
 updateVector(originalVArrow, V);
 updateVector(originalWArrow, W);
 updateVector(originalUArrow, U);
+updateShape();
 updateBasis(T);
 renderFormula();
 
@@ -419,6 +487,7 @@ function animate() {
         updateVector(transformedWArrow, M.multiply(W));
         updateVector(transformedUArrow, M.multiply(U));
         updateBasis(M);
+        updateTransformedShape(M);
     }
 
     controls.update();
@@ -439,6 +508,10 @@ document.getElementById('toggle-basis').addEventListener('change', (e) => {
     document.getElementById(`${axis}-scale`).addEventListener('input', applySliders);
     document.getElementById(`${axis}-shear`).addEventListener('input', applySliders);
 });
+
+const detToggle = document.getElementById('toggle-det');
+detToggle.addEventListener('change', (e) => setDetVisible(e.target.checked));
+setDetVisible(detToggle.checked); 
 
 toState = readSliderState();
 startAnimation();
