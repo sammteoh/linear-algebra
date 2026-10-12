@@ -67,3 +67,12 @@ export function scale(axis, c) {
         default:  throw new Error(`Unknown axis: ${axis}`);
     }
 }
+
+export function shear(axis, c) {
+    switch (axis) {
+        case 'x': return Matrix.create([[1, c, c], [0, 1, 0], [0, 0, 1]]);
+        case 'y': return Matrix.create([[1, 0, 0], [c, 1, c], [0, 0, 1]]);
+        case 'z': return Matrix.create([[1, 0, 0], [0, 1, 0], [c, c, 1]]);
+        default:  throw new Error(`Unknown axis: ${axis}`);
+    }
+}

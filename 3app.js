@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Matrix, rotation, scale } from './math.js';
+import { Matrix, rotation, scale, shear } from './math.js';
 
 let e1 = Matrix.create([
     [1],
@@ -57,8 +57,7 @@ const floor = new THREE.GridHelper(20, 20, 0x888888, 0xcccccc);
 floor.rotation.x = Math.PI / 2;
 scene.add(floor);
 
-// ---------- VECTORS ----------
-
+// Creates a THREE.js arrow at origin with placeholder
 function makeArrow(color) {
     const arrow = new THREE.ArrowHelper(
         new THREE.Vector3(0, 0, 1),
@@ -71,6 +70,19 @@ function makeArrow(color) {
     scene.add(arrow);
     return arrow;
 }
+
+// Repositions the arrow to v
+function updateVector(arrow, v, enabled=true) {
+    const dir = new THREE.Vector3(v.get(1, 1), v.get(2, 1), v.get(3, 1));
+    const length = dir.length();
+    arrow.visible = enabled  && length > 0;
+    if (length === 0) return;
+    arrow.setDirection(dir.normalize());
+    arrow.setLength(length, 0.4, 0.2);
+}
+
+// ---------- VECTORS ----------
+
 
 function makeLattice(n=3, color=0xff0000) {
     const points = [];
@@ -94,6 +106,7 @@ function makeLattice(n=3, color=0xff0000) {
     return new THREE.LineSegments(geometry, material);
 }
 
+// Converts 3x3 matrix into 4x4 matrix for THREE.js
 function toMatrix4(M) {
     return new THREE.Matrix4().set(
         M.get(1, 1), M.get(1, 2), M.get(1, 3), 0,
@@ -103,6 +116,7 @@ function toMatrix4(M) {
     )
 }
 
+// Returns a matrix that is (1 - t)A + tBx
 function blend(A, B, t) {
     const result = new Matrix(3, 3);
     for (let i = 1; i <= 3; i++) {
@@ -111,15 +125,6 @@ function blend(A, B, t) {
         }
     }
     return result;
-}
-
-function updateVector(arrow, v, enabled=true) {
-    const dir = new THREE.Vector3(v.get(1, 1), v.get(2, 1), v.get(3, 1));
-    const length = dir.length();
-    arrow.visible = enabled  && length > 0;
-    if (length === 0) return;
-    arrow.setDirection(dir.normalize());
-    arrow.setLength(length, 0.4, 0.2);
 }
 
 let showBasis = true;
@@ -134,6 +139,7 @@ function updateBasis(M) {
 
 const container = document.getElementById('formula-container');
 
+// Turns matrix into Latex bmatrix string for Katex
 function writeMatrix(m) {
     let returnString = String.raw`\begin{bmatrix} `;
 
@@ -166,6 +172,7 @@ const kArrow = makeArrow(0x000000);
 
 // --------- INPUTS ------------
 
+// Reads the 9 matrix boxes, converts to T and V
 function readInputs() {
     const num = (id) => parseFloat(document.getElementById(id).value) || 0;
 
@@ -177,6 +184,7 @@ function readInputs() {
     V = Matrix.create([[num('v1')], [num('v2')], [num('v3')]]);
 }
 
+// Writes matrix into the 9 matrix boxes
 function setMatrixInputs(M) {
     for (let i = 1; i <= 3; i++) {
         for (let j = 1; j <= 3; j++) {
@@ -185,7 +193,7 @@ function setMatrixInputs(M) {
     }
 }
 
-const IDENTITY_STATE = { rx: 0, ry: 0, rz: 0, sx: 1, sy: 1, sz: 1 };
+const IDENTITY_STATE = { rx: 0, ry: 0, rz: 0, sx: 1, sy: 1, sz: 1, shx: 0, shy: 0, shz: 0 };
 const IDENTITY_M = Matrix.create([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
 
 let sliderMode = true;
@@ -197,21 +205,25 @@ let fromState = { ...IDENTITY_STATE };
 let toState = { ...IDENTITY_STATE };
 let fromM = IDENTITY_M;
 
+// Reads the 9 sliders, returns 9 objects
 function readSliderState() {
     const value = (id) => parseFloat(document.getElementById(id).value);
     const degrees = Math.PI / 180;
     return {
         rx: value('x-rotation') * degrees, ry: value('y-rotation') * degrees, rz: value('z-rotation') * degrees,
-        sx: value('x-scale'), sy: value('y-scale'), sz: value('z-scale')
+        sx: value('x-scale'), sy: value('y-scale'), sz: value('z-scale'),
+        shx: value('x-shear'), shy: value('y-shear'), shz: value('z-shear')
     };
 }
 
+// Blends 2 states so that it's smooth
 function lerpState(a, b, t) {
     const out = {};
     for (const key in a) out[key] = a[key] + t * (b[key] - a[key]);
     return out;
 }
 
+// Turns the state into a matrix
 function buildFromState(s) {
     const R = rotation('z', s.rz)
         .multiply(rotation('y', s.ry))
@@ -219,9 +231,14 @@ function buildFromState(s) {
     const S = scale('z', s.sz)
         .multiply(scale('y', s.sy))
         .multiply(scale('x', s.sx));
-    return S.multiply(R);
+    const SH = shear('z', s.shz)
+        .multiply(shear('y', s.shy))
+        .multiply(shear('x', s.shx));
+    return SH.multiply(S).multiply(R);
 }
 
+// Runs everytime slider moves, updates text, switches to slider mode
+// Reads new input, writes it into the matrix boxes, starts animation
 function applySliders() {
     const axes = ['x', 'y', 'z'];
     const val = (id) => parseFloat(document.getElementById(id).value);
@@ -229,6 +246,7 @@ function applySliders() {
     axes.forEach((a) => {
         document.getElementById(`${a}-rotation-label`).textContent = `${val(`${a}-rotation`)}°`;
         document.getElementById(`${a}-scale-label`).textContent = val(`${a}-scale`);
+        document.getElementById(`${a}-shear-label`).textContent = val(`${a}-shear`);
     });
 
     sliderMode = true;
@@ -253,6 +271,7 @@ function applyInputs() {
     renderFormula();
 }
 
+// Starts animation from whatever is on screen
 function beginFromCurrent(mode) {
     animMode = mode;
     fromState = { ...currentState };
@@ -278,7 +297,7 @@ const DURATION = 3000;
 let startTime = null;
 
 function startAnimation() {
-    animMode = sliderMode ? 'state' : blend;
+    animMode = sliderMode ? 'state' : 'blend';
     fromState = { ...IDENTITY_STATE };
     fromM = IDENTITY_M;
     startTime = performance.now();
@@ -326,6 +345,7 @@ document.getElementById('toggle-basis').addEventListener('change', (e) => {
 ['x', 'y', 'z'].forEach((axis) => {
     document.getElementById(`${axis}-rotation`).addEventListener('input', applySliders);
     document.getElementById(`${axis}-scale`).addEventListener('input', applySliders);
+    document.getElementById(`${axis}-shear`).addEventListener('input', applySliders);
 });
 
 toState = readSliderState();
