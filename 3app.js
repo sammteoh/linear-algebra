@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { Matrix, rotation, scale, shear } from './math.js';
 
 let e1 = Matrix.create([
@@ -48,6 +49,14 @@ camera.lookAt(0, 0, 0);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(size, size);
 
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(size, size);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.pointerEvents = 'none'; // with this, dragging can still reach orbit controls
+canvas.parentElement.appendChild(labelRenderer.domElement);
+
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 
@@ -71,14 +80,48 @@ function makeArrow(color) {
     return arrow;
 }
 
+function makeLabel(text, color='#000000') {
+    const div = document.createElement('div');
+    div.className = 'label';
+    div.textContent = text;
+    div.style.color = color;
+
+    const label = new CSS2DObject(div);
+    scene.add(label);
+    return label;
+}
+
+// Attach the label to the arrow (update vector will keep it at the arrow tip)
+function attachLabel(arrow, text, color, showCoords=false) {
+    arrow.userData.label = makeLabel(text, color);
+    arrow.userData.name = text;
+    arrow.userData.showCoords = showCoords;
+}
+
+function formatCoords(v) {
+    const f = (x) => Number(x.toFixed(2));
+    return `(${f(v.get(1, 1))}, ${f(v.get(2, 1))}, ${f(v.get(3, 1))})`;
+}
+
 // Repositions the arrow to v
 function updateVector(arrow, v, enabled=true) {
     const dir = new THREE.Vector3(v.get(1, 1), v.get(2, 1), v.get(3, 1));
     const length = dir.length();
     arrow.visible = enabled  && length > 0;
+
+    const label = arrow.userData.label;
+    if (label) label.visible = arrow.visible;
+
+    if (label && arrow.userData.showCoords) {
+        const text = `${arrow.userData.name} = ${formatCoords(v)}`;
+        if (label.element.textContent !== text) label.element.textContent= text;
+    }
+
     if (length === 0) return;
     arrow.setDirection(dir.normalize());
     arrow.setLength(length, 0.4, 0.2);
+
+    if (label) label.position.copy(dir).multiplyScalar(length + 0.5);
 }
 
 // ---------- VECTORS ----------
@@ -166,9 +209,24 @@ scene.add(lattice);
 const originalArrow = makeArrow(0x000000);
 const transformedArrow = makeArrow(0xff0000);
 
-const iArrow = makeArrow(0x000000);
-const jArrow = makeArrow(0x000000);
-const kArrow = makeArrow(0x000000);
+const iArrow = makeArrow(0xff8800);
+const jArrow = makeArrow(0x00aa00);
+const kArrow = makeArrow(0x0066ff);
+
+attachLabel(originalArrow, 'v', '#000000', true);
+attachLabel(transformedArrow, 'Tv', '#ff0000', true);
+attachLabel(iArrow, 'î', '#ff8800');
+attachLabel(jArrow, 'ĵ', '#00aa00');
+attachLabel(kArrow, 'k̂', '#0066ff');
+
+const axisLabels = [
+    makeLabel('x', '#cc0000'),
+    makeLabel('y', '#008800'),
+    makeLabel('z', '#0000cc')
+];
+axisLabels[0].position.set(10.7, 0, 0);
+axisLabels[1].position.set(0, 10.7, 0);
+axisLabels[2].position.set(0, 0, 10.7);
 
 // --------- INPUTS ------------
 
@@ -333,6 +391,7 @@ function animate() {
 
     controls.update();
     renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
 }
 
 document.getElementById('replay').addEventListener('click', startAnimation);
