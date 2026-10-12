@@ -45,6 +45,14 @@ export class Matrix {
         };
         return product;
     }
+
+    determinant() {
+        if (this.rows !== 3 || this.cols !== 3) {
+            throw new Error("determinant() only supports 3x3 matrices");
+        }
+        const [[a, b, c], [d, e, f], [g, h, i]] = this.data;
+        return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    }
 }
 
 export function rotation(axis, theta) {

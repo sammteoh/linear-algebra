@@ -313,6 +313,142 @@ function updateTransformedShape(M) {
         (originalArea > 1e-9 ? ` (×${f(area / originalArea)})` : '');
 }
 
+// ---------------- CROSS PRODUCT ---------------
+
+const crossArrow = makeArrow(0x0099aa);
+attachLabel(crossArrow, 'v×w', '#0099aa', true);
+
+const crossReadout = document.getElementById('cross-readout');
+
+function updateCross() {
+    const n = toVec3(V).cross(toVec3(W));
+
+    updateVector(crossArrow, Matrix.create([[n.x], [n.y], [n.z]]));
+
+    const f = (x) => Number(x.toFixed(2));
+    crossReadout.innerHTML = `|v × w| = ${f(n.length())}`;
+}
+
+// ----------------------- 3X3 DETERMINANT --------------------
+
+function makeBox(color) {
+    const fill = new THREE.Mesh(
+        new THREE.BufferGeometry,
+        new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: 0.15,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        })
+    );
+    // 6 faces * 2 triangles * 3 points * 3 numbers = 108
+    fill.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(108), 3));
+    fill.frustumCulled = false;
+
+    const edges = new THREE.LineSegments(
+        new THREE.BufferGeometry(),
+        new THREE.LineBasicMaterial({ color: color})
+    );
+    // 12 edges * 2 points * 3 numbers = 72
+    edges.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(72), 3));
+    edges.frustumCulled = false;
+
+    scene.add(fill, edges);
+    return { fill, edges };
+}
+
+function setBox(box, a, b, c) {
+    const corner = (i, j, k) =>
+        a.clone().multiplyScalar(i).addScaledVector(b, j).addScaledVector(c, k);
+
+    const faces = [
+        [[0,0,0], [1,0,0], [0,1,0]],
+        [[0,0,1], [1,0,0], [0,1,0]],
+        [[0,0,0], [1,0,0], [0,0,1]],
+        [[0,1,0], [1,0,0], [0,0,1]],
+        [[0,0,0], [0,1,0], [0,0,1]],
+        [[1,0,0], [0,1,0], [0,0,1]],
+    ];
+
+    const fillPos = box.fill.geometry.attributes.position;
+    let n = 0;
+    faces.forEach(([o, p, q]) => {
+        const add = (x, y) => x.map((v, i) => v + y[i]);
+        const c0 = corner(...o);
+        const c1 = corner(...add(o, p));
+        const c2 = corner(...add(add(o, p), q));
+        const c3 = corner(...add(o, q));
+        [c0, c1, c2, c0, c2, c3].forEach((pt) => fillPos.setXYZ(n++, pt.x, pt.y, pt.z));
+    });
+    fillPos.needsUpdate = true;
+
+    const edgePos = box.edges.geometry.attributes.position;
+    let m = 0;
+    for (let i = 0; i <= 1; i++) {
+        for (let j = 0; j <= 1; j++) {
+            for (let k = 0; k <= 1; k++) {
+                const idx = [i, j, k];
+                for (let d = 0; d < 3; d++) {
+                    if (idx[d] === 0) {                // one edge per corner per direction
+                        const end = [...idx];
+                        end[d] = 1;
+                        const s = corner(...idx), e = corner(...end);
+                        edgePos.setXYZ(m++, s.x, s.y, s.z);
+                        edgePos.setXYZ(m++, e.x, e.y, e.z);
+                    }
+                }
+            }
+        }
+    }
+    edgePos.needsUpdate = true;
+}
+
+const box = makeBox(0x888888);
+const transformedBox = makeBox(0xff0000);
+
+function updateBox() {
+    setBox(box, toVec3(V), toVec3(W), toVec3(U));
+}
+
+function updateTransformedBox(M) {
+    setBox(transformedBox, toVec3(M.multiply(V)), toVec3(M.multiply(W)), toVec3(M.multiply(U)));
+}
+
+function columns(a, b, c) {
+    return Matrix.create([
+        [a.get(1, 1), b.get(1, 1), c.get(1, 1)],
+        [a.get(2, 1), b.get(2, 1), c.get(2, 1)],
+        [a.get(3, 1), b.get(3, 1), c.get(3, 1)]
+    ]);
+}
+
+const volumeReadout = document.getElementById('volume-readout');
+let originalVolDet = 0;
+
+function updateVolume() {
+    originalVolDet = columns(V, W, U).determinant();
+}
+
+function updateVolumeReadout(M) {
+    const tVolDet = columns(M.multiply(V), M.multiply(W), M.multiply(U)).determinant();
+    const f = (x) => Number(x.toFixed(2));
+
+    volumeReadout.innerHTML =
+        `det[v w u] = ${f(originalVolDet)}<br>` +
+        `volume of v, w, u = ${f(Math.abs(originalVolDet))}<br>` +
+        `det[Tv Tw Tu] = ${f(tVolDet)}<br>` +
+        `det(T) = ${f(M.determinant())}`;    
+}
+
+function setVolVisible(show) {
+    box.fill.visible = show;
+    box.edges.visible = show;
+    transformedBox.fill.visible = show;
+    transformedBox.edges.visible = show;
+    volumeReadout.style.display = show ? '' : 'none';
+}
+
 // --------- INPUTS ------------
 
 // Reads the 9 matrix boxes, converts to T and V
@@ -420,7 +556,12 @@ function applyInputs() {
     updateVector(originalWArrow, W);
     updateVector(originalUArrow, U);
     updateShape();
+    updateCross();
+    updateBox();
+    updateVolume();
     updateTransformedShape(currentM);
+    updateTransformedBox(currentM);
+    updateVolumeReadout(currentM);
     renderFormula();
 }
 
@@ -445,6 +586,9 @@ updateVector(originalVArrow, V);
 updateVector(originalWArrow, W);
 updateVector(originalUArrow, U);
 updateShape();
+updateCross();
+updateBox();
+updateVolume();
 updateBasis(T);
 renderFormula();
 
@@ -488,6 +632,8 @@ function animate() {
         updateVector(transformedUArrow, M.multiply(U));
         updateBasis(M);
         updateTransformedShape(M);
+        updateTransformedBox(M);
+        updateVolumeReadout(M);
     }
 
     controls.update();
@@ -512,6 +658,10 @@ document.getElementById('toggle-basis').addEventListener('change', (e) => {
 const detToggle = document.getElementById('toggle-det');
 detToggle.addEventListener('change', (e) => setDetVisible(e.target.checked));
 setDetVisible(detToggle.checked); 
+
+const volToggle = document.getElementById('toggle-det-vol');
+volToggle.addEventListener('change', (e) => setVolVisible(e.target.checked));
+setVolVisible(volToggle.checked); 
 
 toState = readSliderState();
 startAnimation();
