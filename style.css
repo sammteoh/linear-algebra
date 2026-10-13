@@ -9,13 +9,14 @@ body {
 }
 
 #app {
+    --panel-size: min(50vw, 60vh);   /* the largest square that fits */
     display: flex;
-    height: 100vh;
+    height: var(--panel-size);
 }
 
 #canvas-container {
     position: relative;
-    flex: 0 0 min(50vw, 100vh);
+    flex: 0 0 var(--panel-size);
     border-right: 2px solid black;
 }
 
@@ -35,8 +36,20 @@ body {
 #inputs {
     display: flex;
     gap: 24px;
-    align-items: center;
+    align-items: flex-start;
     margin: 12px 0;
+}
+
+.input-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.input-title {
+    font-family: 'Times New Roman', serif;
+    font-size: 20px;
 }
 
 .matrix-inputs {
@@ -58,8 +71,11 @@ body {
     box-sizing: border-box;
 }
 
-#formula-container {
-    overflow-x: auto;
+#formula {
+    display: flex;
+    flex-direction: column;
+    gap: 16px 12px;
+    align-items: center;
 }
 
 #controls {
@@ -72,5 +88,20 @@ body {
     font-size: 14px;
     font-weight: 600;
     text-shadow: 0 0 3px white, 0 0 3px white;
+}
+
+#calculation-container {
+    display: flex;
+    justify-content: space-evenly;
+    gap: 16px;
+    border-top: 2px solid black;
+}
+
+.equation {
+    font-size: 0.9em;
+}
+
+.calc-cont {
+    padding: 20px;
 }
 

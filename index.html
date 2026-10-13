@@ -16,41 +16,48 @@
 
             <div id="sidebar">
                 <div id="inputs">
-                    <div class="matrix-inputs">
-                        <input type="number" step="any" class="entry" id="t11" value="1">
-                        <input type="number" step="any" class="entry" id="t12" value="0">
-                        <input type="number" step="any" class="entry" id="t13" value="0">
-                        <input type="number" step="any" class="entry" id="t21" value="0">
-                        <input type="number" step="any" class="entry" id="t22" value="1">
-                        <input type="number" step="any" class="entry" id="t23" value="0">
-                        <input type="number" step="any" class="entry" id="t31" value="0">
-                        <input type="number" step="any" class="entry" id="t32" value="0">
-                        <input type="number" step="any" class="entry" id="t33" value="1">
+                    <div class="input-block">
+                        <div class="input-title"><i>T</i></div>
+                        <div class="matrix-inputs">
+                            <input type="number" step="any" class="entry" id="t11" value="1">
+                            <input type="number" step="any" class="entry" id="t12" value="0">
+                            <input type="number" step="any" class="entry" id="t13" value="0">
+                            <input type="number" step="any" class="entry" id="t21" value="0">
+                            <input type="number" step="any" class="entry" id="t22" value="1">
+                            <input type="number" step="any" class="entry" id="t23" value="0">
+                            <input type="number" step="any" class="entry" id="t31" value="0">
+                            <input type="number" step="any" class="entry" id="t32" value="0">
+                            <input type="number" step="any" class="entry" id="t33" value="1">
+                        </div>
                     </div>
 
-                    <div class="vector-inputs">
-                        <input type="number" step="any" class="entry" id="v1" value="0">
-                        <input type="number" step="any" class="entry" id="v2" value="0">
-                        <input type="number" step="any" class="entry" id="v3" value="0">
+                    <div class="input-block">
+                        <div class="input-title"><b><i>v</i></b></div>
+                        <div class="vector-inputs">
+                            <input type="number" step="any" class="entry" id="v1" value="0">
+                            <input type="number" step="any" class="entry" id="v2" value="0">
+                            <input type="number" step="any" class="entry" id="v3" value="0">
+                        </div>
                     </div>
 
-                    <div class="vector-inputs">
-                        <input type="number" step="any" class="entry" id="w1" value="0">
-                        <input type="number" step="any" class="entry" id="w2" value="0">
-                        <input type="number" step="any" class="entry" id="w3" value="0">
+                    <div class="input-block">
+                        <div class="input-title"><b><i>w</i></b></div>
+                        <div class="vector-inputs">
+                            <input type="number" step="any" class="entry" id="w1" value="0">
+                            <input type="number" step="any" class="entry" id="w2" value="0">
+                            <input type="number" step="any" class="entry" id="w3" value="0">
+                        </div>
                     </div>
 
-                    <div class="vector-inputs">
-                        <input type="number" step="any" class="entry" id="u1" value="0">
-                        <input type="number" step="any" class="entry" id="u2" value="0">
-                        <input type="number" step="any" class="entry" id="u3" value="0">
+                    <div class="input-block">
+                        <div class="input-title"><b><i>u</i></b></div>
+                        <div class="vector-inputs">
+                            <input type="number" step="any" class="entry" id="u1" value="0">
+                            <input type="number" step="any" class="entry" id="u2" value="0">
+                            <input type="number" step="any" class="entry" id="u3" value="0">
+                        </div>
                     </div>
                 </div>
-
-                <div id="formula-container"></div>
-                <div id="area-readout"></div>
-                <div id="volume-readout"></div>
-                <div id="cross-readout"></div>
 
                 <div id="controls">
                     <button id="replay">Replay</button>
@@ -118,7 +125,13 @@
                     </div>
                 </label>
             </div>
+        </div>
 
+        <div id="calculation-container">
+            <div id="formula" class="calc-cont"></div>
+            <div id="area-readout" class="calc-cont"></div>
+            <div id="volume-readout" class="calc-cont"></div>
+            <div id="cross-readout" class="calc-cont"></div>
         </div>
 
         <script type="importmap">

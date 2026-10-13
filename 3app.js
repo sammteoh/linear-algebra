@@ -116,7 +116,7 @@ function formatCoords(v) {
 }
 
 // Repositions the arrow to v
-function updateVector(arrow, v, enabled=false) {
+function updateVector(arrow, v, enabled=true) {
     const dir = new THREE.Vector3(v.get(1, 1), v.get(2, 1), v.get(3, 1));
     const length = dir.length();
     arrow.visible = enabled  && length > 0;
@@ -196,7 +196,7 @@ function updateBasis(M) {
 
 // ------------- FORMULAS --------------
 
-const container = document.getElementById('formula-container');
+const container = document.getElementById('formula');
 
 // Turns matrix into Latex bmatrix string for Katex
 function writeMatrix(m) {
@@ -207,7 +207,7 @@ function writeMatrix(m) {
             if (j != 0) {
                 returnString += ' & ';
             }
-            returnString += Number(m.get(i + 1, j + 1).toFixed(3));
+            returnString += Number(m.get(i + 1, j + 1).toFixed(1));
         }
         if (i != m.rows - 1) {
             returnString += String.raw` \\ `;
@@ -306,11 +306,21 @@ function updateTransformedShape(M) {
 
     const area = a.clone().cross(b).length();
     const f = (x) => Number(x.toFixed(2));
-    areaReadout.innerHTML =
-        `det[v w] = ${f(originalDet)}<br>` +
-        `area of v, w = ${f(originalArea)}<br>` +
-        `area of Tv, Tw = ${f(area)}` +
-        (originalArea > 1e-9 ? ` (×${f(area / originalArea)})` : '');
+
+    katex.render(
+            String.raw`
+            \textbf{Area} \\[12pt]
+            det(\mathbf{\vec{v}}, \mathbf{\vec{w}}) = 
+            \begin{vmatrix} 
+            ${V.get(1, 1)} & ${W.get(1, 1)} \\
+            ${V.get(2, 1)} & ${W.get(2, 1)}
+            \end{vmatrix} = 
+            (${V.get(1, 1)})(${W.get(2, 1)}) - (${W.get(1, 1)})(${V.get(2, 1)}) = ${f(originalDet)} \\[12pt]
+            Area(\mathbf{\vec{v}}, \mathbf{\vec{w}}) = ${f(originalArea)} \\[12pt]
+            Area(\mathbf{T\vec{v}}, \mathbf{T\vec{w}}) = ${f(area)}`,
+            areaReadout,
+            { displayMode: false, throwOnError: false }
+    );
 }
 
 // ---------------- CROSS PRODUCT ---------------
@@ -347,12 +357,27 @@ function setPlane(mesh, n, v, enabled=false) {
 
 function updateCross() {
     const n = toVec3(V).cross(toVec3(W));
-    setPlane(planeMesh, n, toVec3(V));
+    setPlane(planeMesh, n, toVec3(V), showCross);
 
     updateVector(crossArrow, Matrix.create([[n.x], [n.y], [n.z]]), showCross);
 
     const f = (x) => Number(x.toFixed(2));
-    crossReadout.innerHTML = `|v × w| = ${f(n.length())}`;
+
+    katex.render(
+        String.raw`
+        \textbf{Cross Product} \\[12pt]
+        \mathbf{\vec{v}} \times \mathbf{\vec{w}} =
+        \begin{vmatrix}
+        \mathbf{\hat{i}} & \mathbf{\hat{j}} & \mathbf{\hat{k}} \\
+        ${V.get(1, 1)} & ${V.get(2, 1)} & ${V.get(3, 1)} \\
+        ${W.get(1, 1)} & ${W.get(2, 1)} & ${W.get(3, 1)}
+        \end{vmatrix} = ${f(n.length())}`,
+        crossReadout,
+        { displayMode: false, throwOnError: false }
+    );
+
+
+    //crossReadout.innerHTML = `|v × w| = ${f(n.length())}`;
 }
 
 const tCrossArrow = makeArrow(0xdd5500);
@@ -482,11 +507,28 @@ function updateVolumeReadout(M) {
     const tVolDet = columns(M.multiply(V), M.multiply(W), M.multiply(U)).determinant();
     const f = (x) => Number(x.toFixed(2));
 
-    volumeReadout.innerHTML =
+
+    katex.render(
+            String.raw`
+            \textbf{Volume} \\[12pt]
+            det(\mathbf{\vec{v}}, \mathbf{\vec{w}}) =
+            \begin{vmatrix} 
+            ${V.get(1, 1)} & ${W.get(1, 1)} & ${U.get(1, 1)} \\
+            ${V.get(2, 1)} & ${W.get(2, 1)} & ${U.get(2, 1)} \\
+            ${V.get(3, 1)} & ${W.get(3, 1)} & ${U.get(3, 1)} \\
+            \end{vmatrix} = 
+            ${f(originalVolDet)} \\[12pt]
+            Vol(\mathbf{\vec{v}}, \mathbf{\vec{w}}, \mathbf{\vec{u}}) = ${f(Math.abs(originalVolDet))} \\[12pt]
+            det(\mathbf{T\vec{v}}, \mathbf{T\vec{w}}, \mathbf{T\vec{u}}) = ${f(tVolDet)}`,
+            volumeReadout,
+            { displayMode: false, throwOnError: false }
+    );
+
+    /* volumeReadout.innerHTML =
         `det[v w u] = ${f(originalVolDet)}<br>` +
         `volume of v, w, u = ${f(Math.abs(originalVolDet))}<br>` +
         `det[Tv Tw Tu] = ${f(tVolDet)}<br>` +
-        `det(T) = ${f(M.determinant())}`;    
+        `det(T) = ${f(M.determinant())}`;   */  
 }
 
 function setVolVisible(show) {
@@ -587,15 +629,26 @@ function applySliders() {
 
 
 function renderFormula() {
-    katex.render(
-        String.raw`${writeMatrix(T)} ${writeMatrix(V)} = \textcolor{red}{${writeMatrix(T.multiply(V))}}
-        \\
-        ${writeMatrix(T)} ${writeMatrix(W)} = \textcolor{red}{${writeMatrix(T.multiply(W))}}
-        \\
-        ${writeMatrix(T)} ${writeMatrix(U)} = \textcolor{red}{${writeMatrix(T.multiply(U))}}`,
-        container,
-        { displayMode: true, throwOnError: false }
-    );
+    const eqs = [
+        { name: 'v', vec: V, color: 'red' },
+        { name: 'w', vec: W, color: 'red' },
+        { name: 'u', vec: U, color: 'red' },
+    ];
+
+    container.innerHTML = '';
+    eqs.forEach(({ name, vec, color }) => {
+        const span = document.createElement('span');
+        span.className = 'equation';
+        katex.render(
+            String.raw`\begin{array}{cccc}
+                T & \mathbf{\vec{${name}}} & & \textcolor{${color}}{T\mathbf{\vec{${name}}}} \\[0pt]
+                ${writeMatrix(T)} & ${writeMatrix(vec)} & = & \textcolor{${color}}{${writeMatrix(T.multiply(vec))}}
+            \end{array}`,
+            span,
+            { displayMode: false, throwOnError: false }
+        );
+        container.appendChild(span);
+    });
 }
 
 function applyInputs() {
@@ -699,9 +752,11 @@ latticeToggle.addEventListener('change', (e) => {
 });
 lattice.visible = latticeToggle.checked;
 
-document.getElementById('toggle-basis').addEventListener('change', (e) => {
+const basisToggle = document.getElementById('toggle-basis');
+basisToggle.addEventListener('change', (e) => {
     showBasis = e.target.checked;
 });
+showBasis = basisToggle.checked;
 
 ['x', 'y', 'z'].forEach((axis) => {
     document.getElementById(`${axis}-rotation`).addEventListener('input', applySliders);
