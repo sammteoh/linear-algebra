@@ -1,6 +1,6 @@
 # Linear Transformations Visualizer
 An interactive 3D web application for seeing what transformation matrices to do space and vectors.
-View live website demo [here](sammteoh.github.io/linear-algebra).
+View live website demo [here](https://sammteoh.github.io/linear-algebra).
 
 ## Overview
 The goal of this project is to visualize core linear algebra concepts. Linear transformations and vectors are drawn in a 3D scene. Each transformation and visualization is paired with its formula, typeset with KaTeX. 
